@@ -10,29 +10,63 @@ import com.vmworld.services.TransactionServicesImpl;
 
 import java.util.Scanner;
 
+/**
+ * The main controller for the VM Savings Bank console application.<br>
+ * It manages user interaction via console.<br>
+ * Handles input, validations, menu-driven options and delegates logic to services.
+ */
 public class BankingController {
 
+    /**
+     * Scanner for reading user input from console.
+     */
     private final Scanner scanner;
+    /**
+     * Service instance for customer operations
+     */
     private final CustomerServices customerService;
+    /**
+     * Service instance for transaction operations
+     */
     private final TransactionServices transactionService;
 
+    /**
+     * Initializes controller with scanner and service instance.
+     */
     public BankingController() {
         this.scanner = new Scanner(System.in);
         this.customerService = new CustomerServicesImpl();
         this.transactionService = new TransactionServicesImpl();
     }
 
+    /**
+     * Prompts user for customer name and sets it with validation.<br>
+     * Retries on invalid input.
+     * @param customer the customer object to update
+     */
     private void setValidCustomerName(Customer customer) {
-        System.out.print("Enter your name: ");
-        customer.setCustomerName(scanner.nextLine());
+        while(true) {
+            try {
+                System.out.print("Enter your name: ");
+                customer.setCustomerName(scanner.nextLine());
+                break;
+            } catch(Exception ex) {
+                System.out.println(ex.getMessage());
+                scanner.nextLine();
+            }
+        }
     }
+
+    /**
+     * Prompts user for mobile number and sets it with validation.<br>
+     * Retries on invalid format.
+     * @param customer the customer object to update
+     */
     private void setValidMobileNumber(Customer customer) {
-        long mobileNumber;
         while(true) {
             try {
                 System.out.print("Enter your mobile number: ");
-                mobileNumber = scanner.nextLong();
-                customer.setMobileNumber(mobileNumber);
+                customer.setMobileNumber(scanner.nextLong());
                 break;
             } catch (Exception ex) {
                 System.out.println(ex.getMessage());
@@ -40,13 +74,17 @@ public class BankingController {
             }
         }
     }
+
+    /**
+     * Prompts user for initial deposit and sets it with validation.<br>
+     * Ensures minimum balance requirement is met.
+     * @param customer the customer object to update
+     */
     private void setValidBalance(Customer customer) {
-        double balance;
         while(true) {
             try {
                 System.out.print("Enter the depositing balance (min 500 INR): ");
-                balance = scanner.nextDouble();
-                customer.getAccount().setBalance(balance);
+                customer.getAccount().setBalance(scanner.nextDouble());
                 return;
             } catch (Exception ex) {
                 System.out.println(ex.getMessage());
@@ -54,6 +92,12 @@ public class BankingController {
             }
         }
     }
+
+    /**
+     * Guides user through account creation process.<br>
+     * Collects name, mobile and initial deposit and delegates to the customer service layer.<br>
+     * Displays success or error message.
+     */
     private void createAccount() {
         Customer customer = new Customer();
         setValidCustomerName(customer);
@@ -69,6 +113,11 @@ public class BankingController {
         }
     }
 
+    /**
+     * Prompts user for account number with validation.<br>
+     * Ensures positive number input
+     * @return the valid account number
+     */
     private long setValidAccount() {
         while(true) {
             System.out.print("Enter bank account: ");
@@ -80,6 +129,12 @@ public class BankingController {
             }
         }
     }
+
+    /**
+     * Prompts user for transaction amount with validation.<br>
+     * Ensures positive amount
+     * @return the valid transaction amount
+     */
     private double setValidAmount() {
         while(true) {
             System.out.print("Enter amount: ");
@@ -91,6 +146,12 @@ public class BankingController {
             }
         }
     }
+
+    /**
+     * Handles deposit or withdrawal transaction workflow.<br>
+     * Uses shared input methods for account and amount, and delegates to the transaction service layer.
+     * @param type the type of transaction to perform.
+     */
     private void makeTransaction(TransactionType type) {
         try {
             long accountNumber = setValidAccount();
@@ -102,9 +163,13 @@ public class BankingController {
             scanner.nextLine();
         }
     }
+
+    /**
+     * Displays the current balance of an account.<br>
+     * Prompts for account number and shows balance.
+     */
     private void displayBalance() {
         try {
-            System.out.print("Enter bank account: ");
             long accountNumber = setValidAccount();
             double balance = transactionService.getAccountBalance(accountNumber);
             System.out.println("Account balance: " + balance);
@@ -113,11 +178,15 @@ public class BankingController {
             scanner.nextLine();
         }
     }
+
+    /**
+     * Displays the last 5 transactions (mini statement).<br>
+     * Shows most recent transactions in reverse chronological order.
+     */
     private void miniStatement() {
         try {
-            System.out.print("Enter bank account: ");
             long accountNumber = setValidAccount();
-            Transaction[] transactions = transactionService.getAllTransactions(accountNumber);
+            Transaction[] transactions = transactionService.getLast5Transactions(accountNumber);
             for(int size=transactions.length-1; size>=0; size--) {
                 System.out.println(transactions[size]);
             }
@@ -128,6 +197,11 @@ public class BankingController {
         }
     }
 
+    /**
+     * Starts the main banking application loop.<br>
+     * Displays menu and processes user choices until exit.<br>
+     * Handles exceptions gracefully and continues execution.
+     */
     public void startBankingApp() {
         byte choice = 0;
         System.out.println("*** Welcome to VM Savings Bank! ***\n");
@@ -154,7 +228,7 @@ public class BankingController {
                     System.out.println("Invalid choice!");
                 }
             } catch (Exception ex) {
-                System.out.println(ex);
+                System.out.println(ex.getMessage());
                 scanner.nextLine();
             }
         } while(true);

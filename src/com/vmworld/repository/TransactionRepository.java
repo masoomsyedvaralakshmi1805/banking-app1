@@ -6,18 +6,34 @@ import com.vmworld.entity.Customer;
 import com.vmworld.entity.Transaction;
 import com.vmworld.entity.TransactionType;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import static com.vmworld.repository.BankingDatabase.CUSTOMERS_LIST;
 
+/**
+ * Repository class handling transaction-related operations.<br>
+ * Manages deposits, withdrawals, balance checks and history.
+ */
 public class TransactionRepository {
 
-    private int transactionId;
-    public TransactionRepository() {
+    /**
+     * A simple counter used to generate unique transaction IDs.
+     */
+    private static int transactionId;
+
+    /**
+     * Initializes transaction ID counter.
+     */
+    static {
         transactionId = 100;
     }
 
+    /**
+     * Finds the index of a customer by account number
+     * @param accountNumber the account number to search
+     * @return index if found, otherwise CUSTOMERS value
+     */
     private int getCustomerIndex(long accountNumber) {
         int index = 0;
         while(index<Constants.CUSTOMERS && CUSTOMERS_LIST[index]!=null) {
@@ -29,7 +45,12 @@ public class TransactionRepository {
         return index;
     }
 
-    public int getFirstNullElement(Transaction[] transactions) throws RuntimeException {
+    /**
+     * Finds the first null position in a transaction array.
+     * @param transactions the transaction array to scan
+     * @return index of first null slot, or TRANSACTIONS if full
+     */
+    public int getFirstNullElement(Transaction[] transactions) {
         int start = 0;
         while(transactions[start++] != null) {
             if(start >= Constants.TRANSACTIONS) {
@@ -39,7 +60,20 @@ public class TransactionRepository {
         return --start;
     }
 
+    /**
+     * Generates a unique transaction ID.
+     * @return the next available transaction ID.
+     */
     private int generateUniqueTransactionId() {return ++transactionId;}
+
+    /**
+     * Registers a new financial transaction.<br>
+     * This method handles the core business logic of updating the account balance and saving the transaction record.
+     * @param type the transaction type
+     * @param accountNumber the target account number
+     * @param amount the transaction amount
+     * @throws RuntimeException if balance is insufficient or limit reached
+     */
     public void registerTransaction(TransactionType type, long accountNumber, double amount) throws RuntimeException {
 
         int index = getCustomerIndex(accountNumber);
@@ -49,7 +83,7 @@ public class TransactionRepository {
             Customer customer = CUSTOMERS_LIST[index];
             Account account = customer.getAccount();
             double balance = account.getBalance();
-            if(type == TransactionType.WITHDRAW && balance-amount<=Constants.MIN_BALANCE) {
+            if(type == TransactionType.WITHDRAW && (balance-amount)<Constants.MIN_BALANCE) {
                 throw new RuntimeException("Insufficient balance!");
             }
             if(type == TransactionType.DEPOSIT) {
@@ -66,15 +100,21 @@ public class TransactionRepository {
             transaction.setAmount(amount);
             transaction.setTransactionId("TXN-" + generateUniqueTransactionId());
             transaction.setType(type);
-            transaction.setTimestamp(LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")));
+            transaction.setTimestamp(new SimpleDateFormat("dd-MM-yyyy HH:mm:ss").format(new Date()));
             transactions[transIndex] = transaction;
-            account.setTransactions(transactions);
+//            account.setTransactions(transactions);
             account.setBalance(balance);
-            customer.setAccount(account);
+//            customer.setAccount(account);
             CUSTOMERS_LIST[index] = customer;
         }
     }
 
+    /**
+     * Retrieves the current balance of an account
+     * @param accountNumber the account to query
+     * @return the current balance
+     * @throws RuntimeException if account not found
+     */
     public double getAccountBalance(long accountNumber) throws RuntimeException {
         int index = getCustomerIndex(accountNumber);
         if(index >= BankingDatabase.customerIndex) {
@@ -84,6 +124,12 @@ public class TransactionRepository {
         }
     }
 
+    /**
+     * Retrieves all transactions for an account
+     * @param accountNumber the account to query
+     * @return array of all transactions
+     * @throws RuntimeException if account not found
+     */
     public Transaction[] getAllTransactions(long accountNumber) throws RuntimeException {
         int index = getCustomerIndex(accountNumber);
         if(index >= BankingDatabase.customerIndex) {
